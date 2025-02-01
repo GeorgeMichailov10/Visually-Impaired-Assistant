@@ -7,9 +7,9 @@ import mss
 import openai
 import base64
 import cv2 
-
+from queue import Queue
 class Utils:
-    def __init__(self):
+    def __init__(self, task_queue: Queue):
         # Input Audio attributes
         self.keyword = "hey assistant"
         self.model = vosk.Model("vosk-model-small-en-us-0.15")
@@ -28,9 +28,7 @@ class Utils:
         self.sct = mss.mss()
 
         # LLM attributes
-        self.api_key = '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'
-        openai.api_key = self.api_key
-        self.model = "gpt-4o-mini"
+        self.task_queue = task_queue
 
     #----Input Audio methods-----------------------------------------------
 
