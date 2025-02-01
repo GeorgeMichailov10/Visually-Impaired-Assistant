@@ -1,2 +1,3 @@
 Add locks to utility functions
-Figure out LLM interaction
+Test out LLM interaction
+Build out passive and active listening
