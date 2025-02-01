@@ -4,10 +4,9 @@ import json
 import pyttsx3
 import numpy as np
 import mss
-import openai
-import base64
-import cv2 
 from queue import Queue
+import threading
+
 class Utils:
     def __init__(self, task_queue: Queue):
         # Input Audio attributes
@@ -84,15 +83,10 @@ class Utils:
 
     #----LLM methods-----------------------------------------------------
 
-    # def send_message(prompt: str) -> str:
-        # Send the prompt to the LLM
-        # Return the LLM response
-
-    # def send_frame(prompt: str, frame: np.ndarray) -> str:
-        # Send the frame and prompt to the LLM
-        # Return the LLM response
-
-    # def send_frames(prompt: str, frames: list[np.ndarray]) -> str:
-        # Send the frames and prompt to the LLM
-        # Return the LLM response
+    def add_llm_task(self, task_type, *args):
+        response_holder = {}
+        event = threading.Event()
+        self.task_queue.put((task_type, response_holder, event, *args))
+        event.wait()
+        return response_holder["response"]
 

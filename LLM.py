@@ -19,12 +19,16 @@ class LLM:
     def check_task_queue(self):
         while True:
             task = self.task_queue.get()
-            if task[0] == "send_message":
-                self.send_message(task[1])
-            elif task[0] == "send_frame":
-                self.send_frame(task[1], task[2])
-            elif task[0] == "send_frames":
-                self.send_frames(task[1], task[2])
+            task_type, response_holder, event, *args = task
+            if task_type == "send_message":
+                response_holder["response"] = self.send_message(args[0])
+                event.set()
+            elif task_type == "send_frame":
+                response_holder["response"] = self.send_frame(args[0], args[1])
+                event.set()
+            elif task_type == "send_frames":
+                response_holder["response"] = self.send_frames(args[0], args[1])
+                event.set()
             else:
                 time.sleep(0.5)
 
