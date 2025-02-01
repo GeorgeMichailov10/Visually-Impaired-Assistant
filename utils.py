@@ -82,7 +82,7 @@ class Utils:
         bottom_left = screen[mid_y:, :mid_x]
         bottom_right = screen[mid_y:, mid_x:]
 
-        return top_left, top_right, bottom_left, bottom_right
+        return [top_left, top_right, bottom_left, bottom_right]
 
     #----LLM methods-----------------------------------------------------
 
