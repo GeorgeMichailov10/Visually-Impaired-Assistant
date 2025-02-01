@@ -86,5 +86,15 @@ class Utils:
 
     #----LLM methods-----------------------------------------------------
 
-    
+    # def send_message(prompt: str) -> str:
+        # Send the prompt to the LLM
+        # Return the LLM response
+
+    # def send_frame(prompt: str, frame: np.ndarray) -> str:
+        # Send the frame and prompt to the LLM
+        # Return the LLM response
+
+    # def send_frames(prompt: str, frames: list[np.ndarray]) -> str:
+        # Send the frames and prompt to the LLM
+        # Return the LLM response
 
