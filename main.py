@@ -10,9 +10,9 @@ import threading
 from resolver import text_recognition, object_recognition, object_location
 
 
-def main_loop(stop_event: threading.Event):
+def main_loop():
     utils = Utils()
-    while not stop_event.is_set():
+    while True:
         utils.passive_listening()
         task_number, goal = utils.active_listening()
         print(f"Task number: {task_number}")
@@ -26,15 +26,14 @@ def main_loop(stop_event: threading.Event):
             utils.speak("Your request is not related to the tasks I can help with.")
         elif task_number == 9:
             utils.speak("Thank you for using my services!")
-        
+            break
 
 if __name__ == "__main__":
-    stop_event = threading.Event()
-    # threading.Thread(target=collision_detection_thread, args=(llm.get_queue(), stop_event)).start()
-    main_loop(stop_event)
+    main_loop()
     
 
     
+
 
 
 

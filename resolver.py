@@ -86,6 +86,16 @@ def room_navigation(u:Utils, goal:str, goal_location:str = None):
             u.speak("Happy to help!")
             return
 
+def collision_detection(u:Utils):
+    counter = 10
+    while counter > 0:
+        frame = u.capture_screen()
+        prompt = f"You are looking from the point of view of the user. If the user continues to move forward, will there be a collision or a hazard of any kind? We only care about directly in front of the user. Answer either 'no' or give a very concise description of the potential collision or hazard and how to avoid it." 
+        collision_response = u.send_frame(prompt, frame)
+        if "no" not in collision_response.lower()[:min(len(collision_response), 5)]:
+            print(f"Collision detected: {collision_response}")
+        counter -= 1
+        time.sleep(0.5)
 
 
 
