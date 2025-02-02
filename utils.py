@@ -72,7 +72,23 @@ class Utils:
                         "This is the user's goal: {text}. Return the number corresponding to the task you need to perform and return -1 if the goal is not related to the tasks."
                     )
                     response = self.add_llm_task("goal_classification", prompt)
-                    return response
+                    print(f"LLM Response: {response}")
+
+                    # Search the first 25 characters for classification
+                    length = min(25, len(response))
+                    response_section = response[:25].lower()  # Convert to lowercase for case-insensitive matching
+
+                    # Step 1: If the digit '1' appears, check for positive or negative one
+                    if "1" in response_section:
+                        if "negative one" or "-1" in response_section:
+                            return -1
+                        if  "1" in response_section:
+                            return 1
+                        
+                    # Step 2: Check for digits from 1 to 4
+                    for char in response_section:
+                        if char in "1234":  # Only check for characters '1', '2', '3', and '4'
+                            return int(char)
 
                 
     #----Output Audio methods-----------------------------------------------
