@@ -140,5 +140,3 @@ class LLM:
 
 
         return output_text[0]
-
-
