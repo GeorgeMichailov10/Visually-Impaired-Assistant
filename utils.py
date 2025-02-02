@@ -71,7 +71,7 @@ class Utils:
                         f"You are assisting a visually impaired person with the following tasks: 1: Text Recognition, 2: Object Recognition, 3: Object Location."
                         "This is the user's goal: {text}. Return the number corresponding to the task you need to perform and return -1 if the goal is not related to the tasks."
                     )
-                    response = self.add_llm_task("goal_classification", prompt)
+                    response = self.add_llm_task("send_message", prompt)
                     print(f"LLM Response: {response}")
 
                     # Search the first 25 characters for classification
