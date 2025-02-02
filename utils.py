@@ -13,6 +13,7 @@ from PIL import Image
 import cv2
 import os
 from dotenv import load_dotenv
+import re
 
 load_dotenv()
 
@@ -24,7 +25,7 @@ interruption_event = threading.Event()
 class Utils:
     def __init__(self, is_priority_speaker: bool = False):
         # Input Audio attributes
-        self.keyword = "hey assistant"
+        self.keyword = "hey echo"
         self.model = vosk.Model("vosk-model-small-en-us-0.15")
         self.recognizer = vosk.KaldiRecognizer(self.model, 16000)
         self.audio = pyaudio.PyAudio()
@@ -43,10 +44,11 @@ class Utils:
         self.sct = mss.mss()
 
         # LLM attributes
-        self.model = "qwen-vl-max"
-        self.api_key = os.getenv("ALIBABA_API_KEY")
-        self.base_url = "https://dashscope-intl.aliyuncs.com/compatible-mode/v1/chat/completions"
+        self.model = "gpt-4o-mini"
+        self.api_key = os.getenv("OPENAI_API_KEY")
+        self.base_url = "https://api.openai.com/v1/chat/completions"
         self.default_max_tokens = 100
+
 
     #----Input Audio methods-----------------------------------------------
 
@@ -59,13 +61,14 @@ class Utils:
                 result_dict = json.loads(result)
                 text = result_dict.get('text', '')
                 print(f"Recognized: {text}")
-                if "activation phrase" in text.lower():
+                if "hey echo" in text.lower():
                     print("Activation phrase detected!")
                     break
 
     def active_listening(self):
         """Listens for the user's goal, queries the LLM to classify it, and returns the corresponding function number."""
         print("Listening for user's goal...")
+        self.speak("How can I help you?")
         while True:
             data = self.stream.read(4096, exception_on_overflow=False)
             if self.recognizer.AcceptWaveform(data):
@@ -156,14 +159,45 @@ class Utils:
 
     #----LLM methods-----------------------------------------------------
 
-    def send_message(self, prompt: str, max_tokens=None) -> str:
+    def clean_text(self, text: str) -> str:
+        """Remove non-alphanumeric characters from the text."""
+        return re.sub(r'[^a-zA-Z0-9\s]', '', text)
+
+    def interact(self, messages: list[dict], max_tokens=None, model=None) -> str:
+        print("Interacting with LLM")
+        """Sends a request to the OpenAI API and retrieves the response."""
+        # Use the provided model or fall back to the default model
+        model_to_use = model if model else self.model
+
+        payload = {
+            "model": model_to_use,
+            "messages": messages,
+            "max_tokens": max_tokens if max_tokens else self.default_max_tokens
+        }
+
+        headers = {
+            "Content-Type": "application/json",
+            "Authorization": f"Bearer {self.api_key}"
+        }
+
+        response = requests.post(self.base_url, json=payload, headers=headers)
+
+        if response.status_code == 200:
+            output_text = response.json().get("choices", [{}])[0].get("message", {}).get("content", "")
+            # Clean the response text
+            cleaned_output_text = self.clean_text(output_text)
+            return cleaned_output_text
+        else:
+            return f"Error: {response.status_code} - {response.text}"
+
+    def send_message(self, prompt: str, max_tokens=None, model=None) -> str:
         messages = [
             {"role": "system", "content": "You are a helpful assistant for a completely blind person and are seeing the world through their point of view."},
             {"role": "user", "content": prompt}
         ]
-        return self.interact(messages, max_tokens)
+        return self.interact(messages, max_tokens, model)
 
-    def send_frame(self, prompt: str, frame: np.ndarray, max_tokens=None) -> str:
+    def send_frame(self, prompt: str, frame: np.ndarray, max_tokens=None, model=None) -> str:
         print("Sending frame to LLM")
         image_base64 = self.image_to_base64(frame)
 
@@ -172,7 +206,6 @@ class Utils:
             {
                 "role": "user",
                 "content": [
-
                     {
                         "type": "image_url",
                         "image_url": {"url": f"data:image/png;base64,{image_base64}"}
@@ -181,9 +214,9 @@ class Utils:
                 ],
             }
         ]
-        return self.interact(messages, max_tokens)
+        return self.interact(messages, max_tokens, model)
 
-    def send_frames(self, prompt: str, frames: list[np.ndarray], max_tokens=None) -> str:
+    def send_frames(self, prompt: str, frames: list[np.ndarray], max_tokens=None, model=None) -> str:
         images_base64 = [
             {
                 "type": "image_url",
@@ -200,29 +233,7 @@ class Utils:
             }
         ]
 
-        return self.interact(messages, max_tokens)
-
-    def interact(self, messages: list[dict], max_tokens=None) -> str:
-        print("Interacting with LLM")
-        """Sends a request to the Alibaba Cloud API and retrieves the response."""
-        payload = {
-            "model": self.model,
-            "messages": messages,
-            "max_tokens": max_tokens if max_tokens else self.default_max_tokens
-        }
-
-        headers = {
-            "Content-Type": "application/json",
-            "Authorization": f"Bearer {self.api_key}"
-        }
-
-        response = requests.post(self.base_url, json=payload, headers=headers)
-
-        if response.status_code == 200:
-            output_text = response.json().get("choices", [{}])[0].get("message", {}).get("content", "")
-            return output_text
-        else:
-            return f"Error: {response.status_code} - {response.text}"
+        return self.interact(messages, max_tokens, model)
 
     @staticmethod
     def image_to_base64(image: np.ndarray) -> str:

@@ -49,10 +49,8 @@ def object_location(u:Utils, goal:str):
     u.speak(response)
     u.speak("Now would you like me to guide you to it?")
     user_res = u.basic_listening()
-    u.speak(f"User response: '{user_res}'")
     prompt = f"In one word 'yes' or 'no' is this a confirmatory statement? User response: '{user_res}'"
     retry_response = u.send_message(prompt)
-    u.speak(f"LLM response: '{retry_response}'")
     print(retry_response)
     if "yes" not in retry_response.lower():
         u.speak("Happy to help!")
@@ -63,9 +61,15 @@ def object_location(u:Utils, goal:str):
    
 def room_navigation(u:Utils, goal:str, goal_location:str, original_frame:np.ndarray):
     u.speak(f"I am coming up with a plan to get you to the goal location.")
+    adjust_frame = u.capture_screen()
+    adjust_prompt = f"You are assisting a completely blind user in navigating to {goal_location}. Based on this description of the room and the first image, have them turn their position to the left or right using degrees if the way they are currently facing  is the second image. In simple terms, your goal is to make the new point of view go from the second image to the first image."
+    adjust_response = u.send_frame(adjust_prompt, adjust_frame)
+    u.speak(adjust_response)
+    
+
     prompt = f"You are assisting a completely blind user. Due to their visual impairment, this process will be iterative. Giving colors and descriptions of small objects that are unrelated will not help. Please plan in baby steps to help the user accomplish their navigation through the room.The user wants to go to the following location: '{goal}'. The goal location is: '{goal_location}'. Please give a quick description of the room with 2 short sentences describing if it is easy or difficult to navigate through and of any potential obstacles they may encounter. Also and create a plan of action for traversing to the goal location and remember you have already located so step one should be something like 'turn right slightly' or 'take two steps forward'. The first image is of the image where you have already located the object and the second imageis where the user is currently facing."
     curr_frame = u.capture_screen()
-    plan = u.send_frames(prompt, [original_frame, curr_frame])
+    plan = u.send_frames(prompt, [original_frame, curr_frame], max_tokens=250, model="gpt-4o")
     u.speak(plan)
 
     done = False
@@ -73,11 +77,11 @@ def room_navigation(u:Utils, goal:str, goal_location:str, original_frame:np.ndar
     while not done:
         frame = u.capture_screen()
         prompt = (f"The user wants to go to the following location: '{goal}'. The goal location is: '{goal_location}'."
-                 f"This is the plan you created at the beginning: '{plan}'. The first image is the original location of the user and the second image is what you see now."
                  f"Please give the next set of instructions for the next few steps to continue traversing to the goal location. These should come in the format of turning, stepping, and then turning again in that order (turning if necessary, you may skip turning). Each iteration has a range of two steps of movement."
                  f"If there are any hazards or collisions in the next few steps, please alert the user with a warning such as 'be careful of a cable on the floor' or 'carefull of the person in front of you'. Be extra cautious with items on the ground or in the way."
+                 f"This is the plan you created at the beginning: '{plan}'. The second image is the original location of the user and the first image is what you see now."
                  )
-        next_step = u.send_frames(prompt, [original_frame, frame])
+        next_step = u.send_frames(prompt, [frame, original_frame])
         u.speak(next_step)
         done_prompt = f"In one word yes or no has the user within arms reach of the goal location?"
         frame = u.capture_screen()
