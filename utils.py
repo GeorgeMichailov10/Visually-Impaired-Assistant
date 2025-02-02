@@ -7,6 +7,7 @@ import mss
 from queue import Queue
 import threading
 import time
+import re
 
 priority_speaker = None
 speaker_lock = threading.Lock()
@@ -60,7 +61,7 @@ class Utils:
             if self.recognizer.AcceptWaveform(data):
                 result = self.recognizer.Result()
                 result_dict = json.loads(result)
-                text = result_dict.get('text', '').strip()
+                text = result_dict.get('text', '')
                 print(f"Recognized: {text}")
                 # Placeholder for LLM processing
                 if text:
@@ -71,8 +72,11 @@ class Utils:
                         "This is the user's goal: {text}. Return the number corresponding to the task you need to perform and return -1 if the goal is not related to the tasks."
                     )
                     response = self.add_llm_task("goal_classification", prompt)
-                    return response
+                    print(f"LLM response: {response}")
 
+                    # Extract just the classification number from the LLM response
+                    match = re.search(r'-?\d+', response)
+                    return int(match.group())
                 
     #----Output Audio methods-----------------------------------------------
 
