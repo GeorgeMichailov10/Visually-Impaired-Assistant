@@ -11,6 +11,10 @@ import requests
 import base64
 from PIL import Image
 import cv2
+import os
+from dotenv import load_dotenv
+
+load_dotenv()
 
 priority_speaker = None
 speaker_lock = threading.Lock()
@@ -39,8 +43,8 @@ class Utils:
         self.sct = mss.mss()
 
         # LLM attributes
-        self.model = "qwen-vl-plus"
-        self.api_key = "sk-b71dc358bb754cb4918e924958589bdb"
+        self.model = "qwen-vl-max"
+        self.api_key = os.getenv("ALIBABA_API_KEY")
         self.base_url = "https://dashscope-intl.aliyuncs.com/compatible-mode/v1/chat/completions"
         self.default_max_tokens = 100
 
