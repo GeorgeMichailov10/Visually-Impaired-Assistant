@@ -30,6 +30,9 @@ class LLM:
             elif task_type == "send_frames":
                 response_holder["response"] = self.send_frames(args[0], args[1])
                 event.set()
+            elif task_type == "send_video":
+                response_holder["response"] = self.send_video(args[0], args[1])
+                event.set()
             else:
                 time.sleep(0.5)
 
