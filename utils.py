@@ -72,7 +72,6 @@ class Utils:
                     )
                     response = self.add_llm_task("goal_classification", prompt)
                     return response
-
                 
     #----Output Audio methods-----------------------------------------------
 

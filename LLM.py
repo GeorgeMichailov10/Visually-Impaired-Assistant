@@ -7,6 +7,7 @@ import numpy as np
 from queue import Queue
 import time
 import threading
+import os
 
 class LLM:
     def __init__(self):
@@ -77,6 +78,36 @@ class LLM:
         
         return self.interact(messages, has_vision=True)
 
+    def send_video(self, prompt:str, video_path:str, frame_interval:int = 5) -> str:
+        cap = cv2.VideoCapture(video_path)
+        frames = []
+        frame_count = 0
+        while cap.isOpened():
+
+            ret, frame = cap.read()
+            if not ret:
+                break
+            frames.append(frame)
+            if frame_count % frame_interval == 0:
+                frame_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+                frames.append(Image.fromarray(frame_rgb))
+            frame_count += 1
+        cap.release()
+        messages = [
+            {
+                "role": "user",
+                "content": [
+                    {"type": "video", "video": frames},
+                    {"type": "text", "text": prompt},
+                ],
+            }
+        ]
+        try:
+            os.remove(video_path)
+        except:
+            pass
+        return self.interact(messages, has_vision=True)
+                
     def interact(self, messages: list[dict], has_vision: bool = False) -> str:
         text = self.processor.apply_chat_template(messages, tokenize=False, add_generation_prompt=True)
 
