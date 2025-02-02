@@ -88,9 +88,10 @@ class Utils:
                     # Step 2: Check for digits from 1 to 4
                     for char in response_section:
                         if char in "1234":  # Only check for characters '1', '2', '3', and '4'
-                            return int(char)
+                            return int(char), text
 
                 
+
     #----Output Audio methods-----------------------------------------------
 
     def speak(self, text: str):
