@@ -5,20 +5,17 @@
 # Start main interaction thread
 # Start collision detection thread
 
-from LLM import LLM
 from utils import Utils
-from queue import Queue
 import threading
-import time
 from resolver import text_recognition, object_recognition, object_location
 
 
-def main_thread(task_queue: Queue, stop_event: threading.Event):
-    utils = Utils(task_queue)
+def main_loop(stop_event: threading.Event):
+    utils = Utils()
     while not stop_event.is_set():
         utils.passive_listening()
-
         task_number, goal = utils.active_listening()
+        print(f"Task number: {task_number}")
         if task_number == 1:
             text_recognition(utils, goal)
         elif task_number == 2:
@@ -28,20 +25,10 @@ def main_thread(task_queue: Queue, stop_event: threading.Event):
         elif task_number == 9:
             utils.speak("Your request is not related to the tasks I can help with.")
 
-def collision_detection_thread(task_queue: Queue, stop_event: threading.Event):
-    utils = Utils(task_queue)
-    while not stop_event.is_set():
-        time.sleep(1)
-
 if __name__ == "__main__":
-    llm = LLM()
     stop_event = threading.Event()
     # threading.Thread(target=collision_detection_thread, args=(llm.get_queue(), stop_event)).start()
-    threading.Thread(target=main_thread, args=(llm.get_queue(), stop_event)).start()
-
-    while not stop_event.is_set():
-        llm.check_task_queue()
-        time.sleep(0.1)
+    main_loop(stop_event)
     
     
 

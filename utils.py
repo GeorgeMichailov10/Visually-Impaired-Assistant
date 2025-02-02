@@ -4,10 +4,13 @@ import json
 import pyttsx3
 import numpy as np
 import mss
-from queue import Queue
+from io import BytesIO
 import threading
 import time
-import re
+import requests
+import base64
+from PIL import Image
+import cv2
 
 priority_speaker = None
 speaker_lock = threading.Lock()
@@ -15,7 +18,7 @@ global_output_engine = pyttsx3.init()
 interruption_event = threading.Event()
 
 class Utils:
-    def __init__(self, task_queue: Queue, is_priority_speaker: bool = False):
+    def __init__(self, is_priority_speaker: bool = False):
         # Input Audio attributes
         self.keyword = "hey assistant"
         self.model = vosk.Model("vosk-model-small-en-us-0.15")
@@ -36,7 +39,9 @@ class Utils:
         self.sct = mss.mss()
 
         # LLM attributes
-        self.task_queue = task_queue
+        self.model = "qwen-vl-plus"
+        self.api_key = "sk-b71dc358bb754cb4918e924958589bdb"
+        self.base_url = "https://dashscope-intl.aliyuncs.com/compatible-mode/v1/chat/completions"
 
     #----Input Audio methods-----------------------------------------------
 
@@ -66,15 +71,16 @@ class Utils:
                 if text:
                     print("User's goal detected. Querying LLM")
                     prompt = (
-                        f"This is what the user wants to do: {text}. It is your job to determine which of the following tasks you need to perform: 1: Text Recognition, 2: Object Recognition, 3: Object Location 9: None of the above. Do NOT make assumptions, only return a function number if this task is direct such as they ask you to read a page, not taking multiple steps to come to a conclusion."
+                        f"This is what the user wants to do: {text}. It is your job to determine which of the following tasks isn most relevant and thus you need to perform: 1: Text Recognition on screen, sign, or book, 2: Object Recognition out in the real world, 3: Object Location such as where a specific object is relative to the user 9: None of the above. Do NOT make assumptions, only return a function number if this task is direct such as they ask you to read a page, not taking multiple steps to come to a conclusion."
                         "Please return only the number associated with the task you need to perform and explain why you chose that number."
                     )
-                    response = self.add_llm_task("send_message", prompt)
+                    response = self.send_message(prompt)
                     print(f"LLM Response: {response}")
 
 
                     for char in response:
                         if char in "1239":
+                            print(f"Returning task number: {char}")
                             return int(char), text
 
                 
@@ -129,10 +135,74 @@ class Utils:
 
     #----LLM methods-----------------------------------------------------
 
-    def add_llm_task(self, task_type, *args):
-        response_holder = {}
-        event = threading.Event()
-        self.task_queue.put((task_type, response_holder, event, *args))
-        event.wait()
-        return response_holder["response"]
+    def send_message(self, prompt: str) -> str:
+        messages = [
+            {"role": "system", "content": "You are a helpful assistant for a visually impaired person."},
+            {"role": "user", "content": prompt}
+        ]
+        return self.interact(messages)
+
+    def send_frame(self, prompt: str, frame: np.ndarray) -> str:
+        print("Sending frame to LLM")
+        image_base64 = self.image_to_base64(frame)
+
+        messages = [
+            {"role": "system", "content": "You are a helpful assistant for a visually impaired person."},
+            {
+                "role": "user",
+                "content": [
+                    {
+                        "type": "image_url",
+                        "image_url": {"url": f"data:image/png;base64,{image_base64}"}
+                    },
+                    {"type": "text", "text": prompt},
+                ],
+            }
+        ]
+        return self.interact(messages)
+
+    def send_frames(self, prompt: str, frames: list[np.ndarray]) -> str:
+        images_base64 = [
+            {
+                "type": "image_url",
+                "image_url": {"url": f"data:image/png;base64,{self.image_to_base64(frame)}"}
+            }
+            for frame in frames
+        ]
+
+        messages = [
+            {"role": "system", "content": "You are a helpful assistant for a visually impaired person."},
+            {
+                "role": "user",
+                "content": images_base64 + [{"type": "text", "text": prompt}],
+            }
+        ]
+        return self.interact(messages)
+
+    def interact(self, messages: list[dict]) -> str:
+        print("Interacting with LLM")
+        """Sends a request to the Alibaba Cloud API and retrieves the response."""
+        payload = {
+            "model": self.model,
+            "messages": messages
+        }
+        headers = {
+            "Content-Type": "application/json",
+            "Authorization": f"Bearer {self.api_key}"
+        }
+
+        response = requests.post(self.base_url, json=payload, headers=headers)
+
+        if response.status_code == 200:
+            output_text = response.json().get("choices", [{}])[0].get("message", {}).get("content", "")
+            return output_text
+        else:
+            return f"Error: {response.status_code} - {response.text}"
+            
+    @staticmethod
+    def image_to_base64(image: np.ndarray) -> str:
+        image_pil = Image.fromarray(cv2.cvtColor(image, cv2.COLOR_BGR2RGB))
+        buffered = BytesIO()
+        image_pil.save(buffered, format="PNG")
+        return base64.b64encode(buffered.getvalue()).decode("utf-8")
 
