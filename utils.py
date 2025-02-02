@@ -67,27 +67,13 @@ class Utils:
                     print("User's goal detected. Querying LLM")
                     # LLM Prompt classification
                     prompt = (
-                        f"Classify the user's goal; '{text}. "
-                        "Return one of the following: 'Text Recognition', 'Object Recognition', 'Object Location'."
+                        f"You are assisting a visually impaired person with the following tasks: 1: Text Recognition, 2: Object Recognition, 3: Object Location."
+                        "This is the user's goal: {text}. Return the number corresponding to the task you need to perform and return -1 if the goal is not related to the tasks."
                     )
                     response = self.add_llm_task("goal_classification", prompt)
+                    return response
 
-                    # Mapping LLM prompt classification
-                    goal_mapping = {
-                        "Text Recognition": 1,
-                        "Object Recognition": 2,
-                        "Object Location": 3
-                    }
-                    
-                    for key, value in goal_mapping.items():
-                        if key in response:
-                            print(f"Classified as: {key} (Returning {value})")
-                            return value
-                        
-                    # If no valid classification, return a default value (0 for unclassified)
-                    print("Could not classify goal. Please try again.")
-                    return 0
-
+                
     #----Output Audio methods-----------------------------------------------
 
     def speak(self, text: str):
