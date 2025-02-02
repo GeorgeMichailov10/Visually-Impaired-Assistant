@@ -33,3 +33,6 @@ def object_recognition(u: Utils, goal: str):
     # Speak the detect objects
     if recognized_objects:
         u.speak("{recognized_objects}")
+
+def object_location(u:Utils, goal:str):
+    """"""
