@@ -53,18 +53,40 @@ class Utils:
                     break
 
     def active_listening(self):
+        """Listens for the user's goal, queries the LLM to classify it, and returns the corresponding function number."""
         print("Listening for user's goal...")
         while True:
             data = self.stream.read(4096, exception_on_overflow=False)
             if self.recognizer.AcceptWaveform(data):
                 result = self.recognizer.Result()
                 result_dict = json.loads(result)
-                text = result_dict.get('text', '')
+                text = result_dict.get('text', '').strip()
                 print(f"Recognized: {text}")
                 # Placeholder for LLM processing
                 if text:
-                    print("User's goal detected!")
-                    return 1  # Example return value
+                    print("User's goal detected. Querying LLM")
+                    # LLM Prompt classification
+                    prompt = (
+                        f"Classify the user's goal; '{text}. "
+                        "Return one of the following: 'Text Recognition', 'Object Recognition', 'Object Location'."
+                    )
+                    response = self.add_llm_task("goal_classification", prompt)
+
+                    # Mapping LLM prompt classification
+                    goal_mapping = {
+                        "Text Recognition": 1,
+                        "Object Recognition": 2,
+                        "Object Location": 3
+                    }
+                    
+                    for key, value in goal_mapping.items():
+                        if key in response:
+                            print(f"Classified as: {key} (Returning {value})")
+                            return value
+                        
+                    # If no valid classification, return a default value (0 for unclassified)
+                    print("Could not classify goal. Please try again.")
+                    return 0
 
     #----Output Audio methods-----------------------------------------------
 
