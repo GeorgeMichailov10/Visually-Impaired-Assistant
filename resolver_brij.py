@@ -35,4 +35,29 @@ def object_recognition(u: Utils, goal: str):
         u.speak("{recognized_objects}")
 
 def object_location(u:Utils, goal:str):
-    """"""
+    """Identifies an object and determines its location relative to nearby objects."""
+
+    frame = u.capture_screen()
+
+    # Split frame into quadrants to reduce search space and increase efficiency
+    quadrants = u.divide_screen()
+
+    # Step 1: Object recognition - Identify objects in frame
+    recognition_prompt = f"Identify all objects in this frame. The user wants '{goal}'"
+    recognized_objects = u.add_llm_task("object_recognition", recognition_prompt, *quadrants.values())
+
+    if not recognized_objects.strip():
+        u.speak(f"Could not identify '{goal}' in the scene.")
+        return
+    
+    # Step 2: Object location - Identify object relative to other objects in vicinity
+    location_prompt = (
+        f"Based on the identified objects: {recognized_objects}, describe the location of '{goal}' in the frame relative to other objects."
+        f"The user wants to locate '{goal}' in the capture."
+    )
+
+    location = u.add_llm_task("object_location", location_prompt, frame)
+
+    # Speak the result
+    if object_location.strip():
+        u.speak(f"{object_location}")
