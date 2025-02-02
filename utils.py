@@ -6,9 +6,15 @@ import numpy as np
 import mss
 from queue import Queue
 import threading
+import time
+
+priority_speaker = None
+speaker_lock = threading.Lock()
+global_output_engine = pyttsx3.init()
+interruption_event = threading.Event()
 
 class Utils:
-    def __init__(self, task_queue: Queue):
+    def __init__(self, task_queue: Queue, is_priority_speaker: bool = False):
         # Input Audio attributes
         self.keyword = "hey assistant"
         self.model = vosk.Model("vosk-model-small-en-us-0.15")
@@ -17,11 +23,13 @@ class Utils:
         self.stream = self.audio.open(format=pyaudio.paInt16, channels=1, rate=16000, input=True, frames_per_buffer=8192)
 
         # Output Audio attributes
-        self.engine = pyttsx3.init()
+        self.engine = global_output_engine
         self.engine.setProperty('rate', 150)
         self.engine.setProperty('volume', 0.9)
         voices = self.engine.getProperty('voices')
         self.engine.setProperty('voice', voices[1].id)
+        self.is_priority_speaker = is_priority_speaker
+
 
         # Screen attributes
         self.sct = mss.mss()
@@ -61,8 +69,33 @@ class Utils:
     #----Output Audio methods-----------------------------------------------
 
     def speak(self, text: str):
+        global priority_speaker
+        # Phase 1: Acquire the lock to set priority and interrupt if needed.
+        with speaker_lock:
+            if self.is_priority_speaker:
+                priority_speaker = "collision"
+                print("[Collision Detector] Interrupting default speech!")
+                self.engine.stop()  # Interrupt any ongoing speech.
+            else:
+                # If a collision speech is in progress, wait.
+                while priority_speaker == "collision":
+                    time.sleep(0.05)
+                priority_speaker = "default"
+                print("[Default] Speaking...")
+
+        self.engine.stop()
+        time.sleep(0.1)
         self.engine.say(text)
-        self.engine.runAndWait()
+
+        try:
+            self.engine.runAndWait()
+        except Exception as e:
+            print("Engine exception:", e)
+
+        # Phase 3: Clear our priority flag.
+        with speaker_lock:
+            if priority_speaker == ("collision" if self.is_priority_speaker else "default"):
+                priority_speaker = None
 
     #----Screen methods-----------------------------------------------------
 

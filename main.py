@@ -7,9 +7,31 @@
 
 from LLM import LLM
 from utils import Utils
+from queue import Queue
+import threading
+import time
+
+def main_thread(task_queue: Queue):
+    utils = Utils(task_queue)
+    utils.passive_listening()
+    task_number = utils.active_listening()
+    if task_number == 1:
+        pass
+
+
+
+def collision_detection_thread(task_queue: Queue):
+    utils = Utils(task_queue)
+
+
+
 
 if __name__ == "__main__":
     llm = LLM()
-    utils = Utils(llm.get_queue())
-    utils.speak(utils.add_llm_task("send_message", "Hello, how are you?"))
+    threading.Thread(target=main_thread, args=(llm.get_queue(),)).start()
+    threading.Thread(target=collision_detection_thread, args=(llm.get_queue(),)).start()
+
+    while True:
+        time.sleep(10)
+    
 
