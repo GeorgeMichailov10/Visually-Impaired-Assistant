@@ -63,31 +63,18 @@ class Utils:
                 result_dict = json.loads(result)
                 text = result_dict.get('text', '')
                 print(f"Recognized: {text}")
-                # Placeholder for LLM processing
                 if text:
                     print("User's goal detected. Querying LLM")
-                    # LLM Prompt classification
                     prompt = (
-                        f"You are assisting a visually impaired person with the following tasks: 1: Text Recognition, 2: Object Recognition, 3: Object Location."
-                        "This is the user's goal: {text}. Return the number corresponding to the task you need to perform and return -1 if the goal is not related to the tasks."
+                        f"This is what the user wants to do: {text}. It is your job to determine which of the following tasks you need to perform: 1: Text Recognition, 2: Object Recognition, 3: Object Location 9: None of the above. Do NOT make assumptions, only return a function number if this task is direct such as they ask you to read a page, not taking multiple steps to come to a conclusion."
+                        "Please return only the number associated with the task you need to perform and explain why you chose that number."
                     )
                     response = self.add_llm_task("send_message", prompt)
                     print(f"LLM Response: {response}")
 
-                    # Search the first 25 characters for classification
-                    length = min(25, len(response))
-                    response_section = response[:25].lower()  # Convert to lowercase for case-insensitive matching
 
-                    # Step 1: If the digit '1' appears, check for positive or negative one
-                    if "1" in response_section:
-                        if "negative one" or "-1" in response_section:
-                            return -1
-                        if  "1" in response_section:
-                            return 1
-                        
-                    # Step 2: Check for digits from 1 to 4
-                    for char in response_section:
-                        if char in "1234":  # Only check for characters '1', '2', '3', and '4'
+                    for char in response:
+                        if char in "1239":
                             return int(char), text
 
                 

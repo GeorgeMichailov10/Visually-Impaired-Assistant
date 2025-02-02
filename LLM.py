@@ -1,18 +1,22 @@
 import cv2
 import torch
-from transformers import Qwen2_5_VLForConditionalGeneration, AutoProcessor
+from transformers import Qwen2_5_VLForConditionalGeneration, AutoProcessor, BitsAndBytesConfig
 from qwen_vl_utils import process_vision_info
 from PIL import Image
 import numpy as np
 from queue import Queue
 import time
 import threading
+
 import os
 
 class LLM:
     def __init__(self):
-        self.model = Qwen2_5_VLForConditionalGeneration.from_pretrained("Qwen/Qwen2.5-VL-3B-Instruct", torch_dtype=torch.float16, device_map="auto")
+        self.quantization_config = BitsAndBytesConfig(load_in_8bit=True)
+        self.model = Qwen2_5_VLForConditionalGeneration.from_pretrained("Qwen/Qwen2.5-VL-3B-Instruct", quantization_config=self.quantization_config, device_map="auto")
         self.processor = AutoProcessor.from_pretrained("Qwen/Qwen2.5-VL-3B-Instruct")
+
+
         self.task_queue = Queue()
         
     def check_task_queue(self):

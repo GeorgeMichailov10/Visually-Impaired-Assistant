@@ -25,6 +25,8 @@ def main_thread(task_queue: Queue, stop_event: threading.Event):
             object_recognition(utils, goal)
         elif task_number == 3:
             object_location(utils, goal)
+        elif task_number == 9:
+            utils.speak("Your request is not related to the tasks I can help with.")
 
 def collision_detection_thread(task_queue: Queue, stop_event: threading.Event):
     utils = Utils(task_queue)
