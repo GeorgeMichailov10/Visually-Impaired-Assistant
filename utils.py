@@ -31,7 +31,7 @@ class Utils:
         self.engine.setProperty('rate', 150)
         self.engine.setProperty('volume', 0.9)
         voices = self.engine.getProperty('voices')
-        self.engine.setProperty('voice', voices[1].id)
+        self.engine.setProperty('voice', voices[0].id)
         self.is_priority_speaker = is_priority_speaker
 
 
@@ -42,7 +42,7 @@ class Utils:
         self.model = "qwen-vl-plus"
         self.api_key = "sk-b71dc358bb754cb4918e924958589bdb"
         self.base_url = "https://dashscope-intl.aliyuncs.com/compatible-mode/v1/chat/completions"
-        self.default_max_tokens = 200
+        self.default_max_tokens = 100
 
     #----Input Audio methods-----------------------------------------------
 
@@ -72,7 +72,7 @@ class Utils:
                 if text:
                     print("User's goal detected. Querying LLM")
                     prompt = (
-                        f"This is what the user wants to do: {text}. It is your job to determine which of the following tasks isn most relevant and thus you need to perform: 1: Text Recognition on screen, sign, or book, 2: Object Recognition out in the real world, 3: Object Location such as where a specific object is relative to the user 8: None of the above, or 9: Done for now. Do NOT make assumptions, only return a function number if this task is direct such as they ask you to read a page, not taking multiple steps to come to a conclusion."
+                        f"This is what the user wants to do: {text}. It is your job to determine which of the following tasks isn most relevant and thus you need to perform: 1: Text Recognition on screen, sign, or book, 2: Describe a scene out in the real world, 3: Object Location such as where a specific object is relative to the user, 4: Helping navigate through a room, 8: None of the above or is inappeopriate, or 9: Done for now. Do NOT make assumptions, only return a function number if this task is direct such as they ask you to read a page, not taking multiple steps to come to a conclusion."
                         "Please return only the number associated with the task you need to perform and explain why you chose that number."
                     )
                     response = self.send_message(prompt)
@@ -80,17 +80,23 @@ class Utils:
 
 
                     for char in response:
-                        if char in "12389":
+                        if char in "123489":
                             print(f"Returning task number: {char}")
                             return int(char), text
 
     def basic_listening(self):
-        data = self.stream.read(4096, exception_on_overflow=False)
-        if self.recognizer.AcceptWaveform(data):
-            result = self.recognizer.Result()
-            result_dict = json.loads(result)
-            text = result_dict.get('text', '')
-            return text
+        try:
+            while True:
+                data = self.stream.read(4096, exception_on_overflow=False)
+                if self.recognizer.AcceptWaveform(data):
+                    result = self.recognizer.Result()
+                    result_dict = json.loads(result)
+                    text = result_dict.get('text', '')
+                    if text:
+                        return text
+        except Exception as e:
+            print(f"Error during basic listening: {e}")
+            return ""
 
     #----Output Audio methods-----------------------------------------------
 
@@ -129,12 +135,13 @@ class Utils:
         height, width = 1600, 2560
         screenshot = self.sct.grab(self.sct.monitors[1])
         screenshot = np.array(screenshot)
-        screenshot = screenshot[125:height-75, 920:1640]
+        #screenshot = screenshot[125:height-75, 920:1640]
         return screenshot
 
     def divide_screen(self, screen: np.ndarray):
         height, width, _ = screen.shape
         mid_x, mid_y = width // 2, height // 2
+
 
         top_left = screen[:mid_y, :mid_x]
         top_right = screen[:mid_y, mid_x:]
@@ -147,7 +154,7 @@ class Utils:
 
     def send_message(self, prompt: str, max_tokens=None) -> str:
         messages = [
-            {"role": "system", "content": "You are a helpful assistant for a visually impaired person."},
+            {"role": "system", "content": "You are a helpful assistant for a completely blind person and are seeing the world through their point of view."},
             {"role": "user", "content": prompt}
         ]
         return self.interact(messages, max_tokens)
@@ -157,10 +164,11 @@ class Utils:
         image_base64 = self.image_to_base64(frame)
 
         messages = [
-            {"role": "system", "content": "You are a helpful assistant for a visually impaired person."},
+            {"role": "system", "content": "You are a helpful assistant for a completely blind person and are seeing the world through their point of view."},
             {
                 "role": "user",
                 "content": [
+
                     {
                         "type": "image_url",
                         "image_url": {"url": f"data:image/png;base64,{image_base64}"}
@@ -181,12 +189,13 @@ class Utils:
         ]
 
         messages = [
-            {"role": "system", "content": "You are a helpful assistant for a visually impaired person."},
+            {"role": "system", "content": "You are a helpful assistant for a completely blind person and are seeing the world through their point of view."},
             {
                 "role": "user",
                 "content": images_base64 + [{"type": "text", "text": prompt}],
             }
         ]
+
         return self.interact(messages, max_tokens)
 
     def interact(self, messages: list[dict], max_tokens=None) -> str:

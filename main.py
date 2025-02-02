@@ -7,7 +7,7 @@
 
 from utils import Utils
 import threading
-from resolver import text_recognition, object_recognition, object_location
+from resolver import text_recognition, object_recognition, object_location, room_navigation, collision_detection
 
 
 def main_loop():
@@ -22,9 +22,12 @@ def main_loop():
             object_recognition(utils, goal)
         elif task_number == 3:
             object_location(utils, goal)
+        elif task_number == 4:
+            room_navigation(utils, goal)
         elif task_number == 8:
             utils.speak("Your request is not related to the tasks I can help with.")
         elif task_number == 9:
+
             utils.speak("Thank you for using my services!")
             break
 

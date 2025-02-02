@@ -1,5 +1,6 @@
 from utils import Utils
 import time
+import numpy as np
 
 def text_recognition(u: Utils, goal: str):
     print("Text recognition")
@@ -11,7 +12,7 @@ def text_recognition(u: Utils, goal: str):
 
 def object_recognition(u: Utils, goal: str):
     frame = u.capture_screen()
-    prompt = f"Identify the key object(s) in the frame through scene description. Be descriptive, but concise. The user wants: '{goal}'"
+    prompt = f"You are assisting a completely blind user from their point of view. Identify the key object(s) in the frame through scene description. Be descriptive, but concise. The user wants: '{goal}'"
     recognized_objects = u.send_frame(prompt, frame)
     u.speak(recognized_objects)
 
@@ -21,9 +22,10 @@ def object_location(u:Utils, goal:str):
         frames = []
         u.speak("Please look around slowly and I will try to find what you are looking for.")
         start = time.time()
-        while time.time() - start < 5:
+        while time.time() - start < 3:
             frames.append(u.capture_screen())
-            time.sleep(0.5)
+            time.sleep(0.7)
+        print(len(frames))
         prompt = f"You are  looking for the following object: '{goal}'. Return the image number where you see it (the most clearly). Return a 1 if you see it in the first image, 2 if you see it in the second image, and so on. Return a 0 if you do not see it in any of the images. Return a vague description of where you found it."
         response = u.send_frames(prompt, frames)
         image_number = ""
@@ -44,52 +46,45 @@ def object_location(u:Utils, goal:str):
 
     u.speak(f"I believe I have found what you are looking for!")
     frame = frames[image_number - 1]
-    prompt = f"In the previous image, you found the following object: '{goal}'. This was the description: '{response}'. Please give a deeper description of where you found it."
-    response = u.send_frame(prompt, frame)
     u.speak(response)
     u.speak("Now would you like me to guide you to it?")
     user_res = u.basic_listening()
-    prompt = f"In one word yes or no does the user want to try again? User response: '{user_res}'"
+    u.speak(f"User response: '{user_res}'")
+    prompt = f"In one word 'yes' or 'no' is this a confirmatory statement? User response: '{user_res}'"
     retry_response = u.send_message(prompt)
+    u.speak(f"LLM response: '{retry_response}'")
+    print(retry_response)
     if "yes" not in retry_response.lower():
         u.speak("Happy to help!")
         return
     else:
-        u.speak("Ok, I will guide you to it.")
-        room_navigation(u, goal, response)
-
-def simple_object_location(u:Utils, goal:str):
-    prompt = f"You are looking for the following object: '{goal}'. Please give a concise description of where you found it along with distinguishing relative landmarks nearby."
-    frame = u.capture_screen()
-    response = u.send_frame(prompt, frame)
-    return response
-    
-def room_navigation(u:Utils, goal:str, goal_location:str = None):
-    if goal_location is None:
-        goal_location = simple_object_location(u, goal)
-    prompt = f"The user wants to go to the following location: '{goal}'. The goal location is: '{goal_location}'. Please give a quick description of the room and create a plan of action for traversing to the goal location."
-    frame = u.capture_screen()
-    plan = u.send_frame(prompt, frame)
+        u.speak("Ok, I now will guide you to it.")
+        room_navigation(u, goal, response, frame)
+   
+def room_navigation(u:Utils, goal:str, goal_location:str, original_frame:np.ndarray):
+    u.speak(f"I am coming up with a plan to get you to the goal location.")
+    prompt = f"You are assisting a completely blind user. Due to their visual impairment, this process will be iterative. Giving colors and descriptions of small objects that are unrelated will not help. Please plan in baby steps to help the user accomplish their navigation through the room.The user wants to go to the following location: '{goal}'. The goal location is: '{goal_location}'. Please give a quick description of the room with 2 short sentences describing if it is easy or difficult to navigate through and of any potential obstacles they may encounter. Also and create a plan of action for traversing to the goal location and remember you have already located so step one should be something like 'turn right slightly' or 'take two steps forward'. The first image is of the image where you have already located the object and the second imageis where the user is currently facing."
+    curr_frame = u.capture_screen()
+    plan = u.send_frames(prompt, [original_frame, curr_frame])
     u.speak(plan)
-    buffer = []
+
     done = False
 
     while not done:
         frame = u.capture_screen()
         prompt = (f"The user wants to go to the following location: '{goal}'. The goal location is: '{goal_location}'."
-                 f"This is the plan you created at the beginning: '{plan}'."
-                 f"These are the previous instructions you have given the user: '{''.join(buffer[::-1])}'."
-                 f"Please give the next set of instructions for the next few steps to continue traversing to the goal location. These should come in the format of 'turn slightly to the left and walk forward' or 'walk forward and turn slightly to the right'."
-                 f"If there are any hazards or collisions, please alert the user with a warning such as 'be careful of a cable on the floor' or 'carefull of the person in front of you'."
+                 f"This is the plan you created at the beginning: '{plan}'. The first image is the original location of the user and the second image is what you see now."
+                 f"Please give the next set of instructions for the next few steps to continue traversing to the goal location. These should come in the format of turning, stepping, and then turning again in that order (turning if necessary, you may skip turning). Each iteration has a range of two steps of movement."
+                 f"If there are any hazards or collisions in the next few steps, please alert the user with a warning such as 'be careful of a cable on the floor' or 'carefull of the person in front of you'. Be extra cautious with items on the ground or in the way."
                  )
-        next_step = u.send_frame(prompt, frame)
-        buffer.append(next_step)
-
+        next_step = u.send_frames(prompt, [original_frame, frame])
         u.speak(next_step)
-        done_prompt = f"In one word yes or no has the user arrived at the goal location based on the last instruction: '{next_step}'?"
-        done_response = u.send_message(done_prompt)
+        done_prompt = f"In one word yes or no has the user within arms reach of the goal location?"
+        frame = u.capture_screen()
+        done_response = u.send_frame(done_prompt, frame)
         if "yes" in done_response.lower():
             u.speak("Happy to help!")
+
             return
 
 def collision_detection(u:Utils):
@@ -102,8 +97,3 @@ def collision_detection(u:Utils):
             print(f"Collision detected: {collision_response}")
         counter -= 1
         time.sleep(0.5)
-
-
-
-    
-
