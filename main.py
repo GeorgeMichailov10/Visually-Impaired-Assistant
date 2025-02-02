@@ -11,12 +11,14 @@ from queue import Queue
 import threading
 import time
 
+
 def main_thread(task_queue: Queue):
     utils = Utils(task_queue)
-    utils.passive_listening()
-    task_number = utils.active_listening()
-    if task_number == 1:
-        pass
+    while True:
+        utils.passive_listening()
+        task_number = utils.active_listening()
+        if task_number == 1:
+
 
 
 
