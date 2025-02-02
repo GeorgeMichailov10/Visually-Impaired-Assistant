@@ -32,8 +32,7 @@ def object_location(u:Utils, goal:str):
         for char in response:
             if char in "1234567890":
                 image_number += char
-        image_number = int(image_number)
-        if image_number == 0:
+        if image_number == "0" or image_number == "":
             u.speak("I did not find it the object you are looking for. Would you like me to try again?")
             user_res = u.basic_listening()
             prompt = f"In one word yes or no does the user want to try again? User response: '{user_res}'"
@@ -45,6 +44,7 @@ def object_location(u:Utils, goal:str):
             break
 
     u.speak(f"I believe I have found what you are looking for!")
+    image_number = int(image_number)
     frame = frames[image_number - 1]
     u.speak(response)
     u.speak("Now would you like me to guide you to it?")
@@ -65,12 +65,14 @@ def room_navigation(u:Utils, goal:str, goal_location:str, original_frame:np.ndar
     adjust_prompt = f"You are assisting a completely blind user in navigating to {goal_location}. Based on this description of the room and the first image, have them turn their position to the left or right using degrees if the way they are currently facing  is the second image. In simple terms, your goal is to make the new point of view go from the second image to the first image."
     adjust_response = u.send_frame(adjust_prompt, adjust_frame)
     u.speak(adjust_response)
+    time.sleep(1)
     
 
     prompt = f"You are assisting a completely blind user. Due to their visual impairment, this process will be iterative. Giving colors and descriptions of small objects that are unrelated will not help. Please plan in baby steps to help the user accomplish their navigation through the room.The user wants to go to the following location: '{goal}'. The goal location is: '{goal_location}'. Please give a quick description of the room with 2 short sentences describing if it is easy or difficult to navigate through and of any potential obstacles they may encounter. Also and create a plan of action for traversing to the goal location and remember you have already located so step one should be something like 'turn right slightly' or 'take two steps forward'. The first image is of the image where you have already located the object and the second imageis where the user is currently facing."
     curr_frame = u.capture_screen()
     plan = u.send_frames(prompt, [original_frame, curr_frame], max_tokens=250, model="gpt-4o")
-    u.speak(plan)
+    u.speak("Here is the overview of the plan: " + plan)
+
 
     done = False
 

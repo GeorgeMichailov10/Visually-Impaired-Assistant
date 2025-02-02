@@ -79,7 +79,8 @@ class Utils:
                 if text:
                     print("User's goal detected. Querying LLM")
                     prompt = (
-                        f"This is what the user wants to do: {text}. It is your job to determine which of the following tasks isn most relevant and thus you need to perform: 1: Text Recognition on screen, sign, or book, 2: Describe a scene out in the real world, 3: Object Location such as where a specific object is relative to the user, 4: Helping navigate through a room, 8: None of the above or is inappeopriate, or 9: Done for now. Do NOT make assumptions, only return a function number if this task is direct such as they ask you to read a page, not taking multiple steps to come to a conclusion."
+                        f"This is what the user wants to do: {text}. It is your job to determine which of the following tasks isn most relevant and thus you need to perform: 1: Text Recognition on screen, sign, or book, 2: Describe what you see from their current point of view, 3: Object Location such as where a specific object is relative to the user, 4: Helping navigate through a room, 8: None of the above or is inappeopriate, or 9: Done for now. Do NOT make assumptions, only return a function number if this task is direct such as they ask you to read a page, not taking multiple steps to come to a conclusion."
+                        f"An important note: if they tell you to read a book or screen, assume that the book or screen is close by in direct view of their Point of view."
                         "Please return only the number associated with the task you need to perform and explain why you chose that number."
                     )
                     response = self.send_message(prompt)

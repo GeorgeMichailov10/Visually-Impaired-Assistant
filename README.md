@@ -25,3 +25,8 @@ We learned how to think from the perspective of a user rather than the perspecti
 ## Future Improvements
 
 We would run this on a VM with two A100 GPUs where we can run them sequentially or even against each other in order to correct each other's answers. We would also be able to implement chain of thought models for the guidance on room navigation once models like o1 and DeepSeek R1 to come up with the best plans.
+
+## Demo Links
+
+- Object Location and Room Navigation: https://vimeo.com/1052815950
+- Text Recognition and Scene Description:https://vimeo.com/1052815979
