@@ -58,27 +58,33 @@ def object_location(u:Utils, goal:str):
         u.speak("Ok, I will guide you to it.")
         room_navigation(u, goal, response)
 
-
-
+def simple_object_location(u:Utils, goal:str):
+    prompt = f"You are looking for the following object: '{goal}'. Please give a concise description of where you found it along with distinguishing relative landmarks nearby."
+    frame = u.capture_screen()
+    response = u.send_frame(prompt, frame)
+    return response
+    
 def room_navigation(u:Utils, goal:str, goal_location:str = None):
-    # If goal location is not provided, find it
     if goal_location is None:
-        goal_location = goal
+        goal_location = simple_object_location(u, goal)
     prompt = f"The user wants to go to the following location: '{goal}'. The goal location is: '{goal_location}'. Please give a quick description of the room and create a plan of action for traversing to the goal location."
     frame = u.capture_screen()
     plan = u.send_frame(prompt, frame)
     u.speak(plan)
     buffer = []
     done = False
+
     while not done:
         frame = u.capture_screen()
         prompt = (f"The user wants to go to the following location: '{goal}'. The goal location is: '{goal_location}'."
                  f"This is the plan you created at the beginning: '{plan}'."
                  f"These are the previous instructions you have given the user: '{''.join(buffer[::-1])}'."
-                 f"Please give the next set of instructions for the next few steps to continue traversing to the goal location."
+                 f"Please give the next set of instructions for the next few steps to continue traversing to the goal location. These should come in the format of 'turn slightly to the left and walk forward' or 'walk forward and turn slightly to the right'."
+                 f"If there are any hazards or collisions, please alert the user with a warning such as 'be careful of a cable on the floor' or 'carefull of the person in front of you'."
                  )
         next_step = u.send_frame(prompt, frame)
         buffer.append(next_step)
+
         u.speak(next_step)
         done_prompt = f"In one word yes or no has the user arrived at the goal location based on the last instruction: '{next_step}'?"
         done_response = u.send_message(done_prompt)
