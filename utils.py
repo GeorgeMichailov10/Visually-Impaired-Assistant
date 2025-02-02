@@ -126,8 +126,11 @@ class Utils:
     #----Screen methods-----------------------------------------------------
 
     def capture_screen(self):
+        height, width = 1600, 2560
         screenshot = self.sct.grab(self.sct.monitors[1])
-        return np.array(screenshot)
+        screenshot = np.array(screenshot)
+        screenshot = screenshot[125:height-75, 920:1640]
+        return screenshot
 
     def divide_screen(self, screen: np.ndarray):
         height, width, _ = screen.shape
