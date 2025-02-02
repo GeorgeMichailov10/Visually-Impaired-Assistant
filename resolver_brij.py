@@ -8,7 +8,7 @@ def text_recognition(u: Utils, goal: str):
     prompt = f"""You are helping a visually impaired user to help read text from the captured image or frame. The user wants: '{goal}'. """
     
     # Send frame and prompt to Qwen 3B
-    extracted_text = u.add_llm_task("text_recognition", prompt, frame)
+    extracted_text = u.add_llm_task("send_frame", prompt, frame)
 
     if extracted_text.strip():  # If text is detected
         u.speak(f"{extracted_text}")  # Speak the extracted text
@@ -28,7 +28,7 @@ def object_recognition(u: Utils, goal: str):
     and identify the object(s) as per the user goal, point out any other objects near by for context. The user wants: '{goal}'."""
 
     # Send quadrant partitions to Qwen 3B for processing
-    recognized_objects = u.add_llm_task("object_recognition", prompt, *quadrants.values())
+    recognized_objects = u.add_llm_task("send_frames", prompt, *quadrants.values())
 
     # Speak the detect objects
     if recognized_objects:
@@ -44,7 +44,7 @@ def object_location(u:Utils, goal:str):
 
     # Step 1: Object recognition - Identify objects in frame
     recognition_prompt = f"Identify all objects in this frame. The user wants '{goal}'"
-    recognized_objects = u.add_llm_task("object_recognition", recognition_prompt, *quadrants.values())
+    recognized_objects = u.add_llm_task("send_frames", recognition_prompt, *quadrants.values())
 
     if not recognized_objects.strip():
         u.speak(f"Could not identify '{goal}' in the scene.")
@@ -56,7 +56,7 @@ def object_location(u:Utils, goal:str):
         f"The user wants to locate '{goal}' in the capture."
     )
 
-    location = u.add_llm_task("object_location", location_prompt, frame)
+    location = u.add_llm_task("send_frame", location_prompt, frame)
 
     # Speak the result
     if object_location.strip():
