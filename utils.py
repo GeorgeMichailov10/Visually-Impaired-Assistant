@@ -60,7 +60,7 @@ class Utils:
             if self.recognizer.AcceptWaveform(data):
                 result = self.recognizer.Result()
                 result_dict = json.loads(result)
-                text = result_dict.get('text', '')
+                text = result_dict.get('text', '').strip()
                 print(f"Recognized: {text}")
                 # Placeholder for LLM processing
                 if text:
