@@ -22,14 +22,18 @@ def main_loop(stop_event: threading.Event):
             object_recognition(utils, goal)
         elif task_number == 3:
             object_location(utils, goal)
-        elif task_number == 9:
+        elif task_number == 8:
             utils.speak("Your request is not related to the tasks I can help with.")
+        elif task_number == 9:
+            utils.speak("Thank you for using my services!")
+        
 
 if __name__ == "__main__":
     stop_event = threading.Event()
     # threading.Thread(target=collision_detection_thread, args=(llm.get_queue(), stop_event)).start()
     main_loop(stop_event)
     
+
     
 
 
