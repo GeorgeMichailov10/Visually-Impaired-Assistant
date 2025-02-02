@@ -14,27 +14,22 @@ class LLM:
         self.model = Qwen2_5_VLForConditionalGeneration.from_pretrained("Qwen/Qwen2.5-VL-3B-Instruct", torch_dtype=torch.float16, device_map="auto")
         self.processor = AutoProcessor.from_pretrained("Qwen/Qwen2.5-VL-3B-Instruct")
         self.task_queue = Queue()
-        self.thread = threading.Thread(target=self.check_task_queue)
-        self.thread.start()
         
     def check_task_queue(self):
-        while True:
-            task = self.task_queue.get()
-            task_type, response_holder, event, *args = task
-            if task_type == "send_message":
-                response_holder["response"] = self.send_message(args[0])
-                event.set()
-            elif task_type == "send_frame":
-                response_holder["response"] = self.send_frame(args[0], args[1])
-                event.set()
-            elif task_type == "send_frames":
-                response_holder["response"] = self.send_frames(args[0], args[1])
-                event.set()
-            elif task_type == "send_video":
-                response_holder["response"] = self.send_video(args[0], args[1])
-                event.set()
-            else:
-                time.sleep(0.5)
+        task = self.task_queue.get()
+        task_type, response_holder, event, *args = task
+        if task_type == "send_message":
+            response_holder["response"] = self.send_message(args[0])
+            event.set()
+        elif task_type == "send_frame":
+            response_holder["response"] = self.send_frame(args[0], args[1])
+            event.set()
+        elif task_type == "send_frames":
+            response_holder["response"] = self.send_frames(args[0], args[1])
+            event.set()
+        elif task_type == "send_video":
+            response_holder["response"] = self.send_video(args[0], args[1])
+            event.set()
 
     def get_queue(self):
         return self.task_queue

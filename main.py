@@ -13,10 +13,11 @@ import time
 from resolver import text_recognition, object_recognition, object_location
 
 
-def main_thread(task_queue: Queue):
+def main_thread(task_queue: Queue, stop_event: threading.Event):
     utils = Utils(task_queue)
-    while True:
+    while not stop_event.is_set():
         utils.passive_listening()
+
         task_number, goal = utils.active_listening()
         if task_number == 1:
             text_recognition(utils, goal)
@@ -25,19 +26,22 @@ def main_thread(task_queue: Queue):
         elif task_number == 3:
             object_location(utils, goal)
 
-
-
-
-def collision_detection_thread(task_queue: Queue):
+def collision_detection_thread(task_queue: Queue, stop_event: threading.Event):
     utils = Utils(task_queue)
-
-
-
+    while not stop_event.is_set():
+        time.sleep(1)
 
 if __name__ == "__main__":
     llm = LLM()
-    threading.Thread(target=collision_detection_thread, args=(llm.get_queue(),)).start()
-    main_thread(llm.get_queue())
+    stop_event = threading.Event()
+    # threading.Thread(target=collision_detection_thread, args=(llm.get_queue(), stop_event)).start()
+    threading.Thread(target=main_thread, args=(llm.get_queue(), stop_event)).start()
+
+    while not stop_event.is_set():
+        llm.check_task_queue()
+        time.sleep(0.1)
     
     
+
+
 
